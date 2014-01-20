@@ -26,7 +26,8 @@ end
 
 # Define a server.
 #
-# Options: key_name, image_id, size
+# Options: key_name, image_id, size, knife_solo, attributes (filename)
+#
 def host name, security_groups, runlist, options={}
   host_namespace = HostRecord.define name, security_groups, runlist
   CloudRunner.add_component host_namespace
@@ -63,11 +64,11 @@ class SecurityRecord # :nodoc:
 
   def self.create name, public_ports, group_ports
     public_ports = Array(public_ports)
-    group = Fog::AWS::Compute.security_groups.get(name)
+    group = Fog::Compute[:aws].security_groups.get(name)
     if group
-      delete_all_rules(existing_group)
+      delete_all_rules(group)
     else
-      group = Fog::AWS::Compute.security_groups.new(name: name,
+      group = Fog::Compute[:aws].security_groups.new(name: name,
                                         description: "Autmated Group #{name}")
       group.save
     end
@@ -83,8 +84,39 @@ class SecurityRecord # :nodoc:
   end
 
   def self.destroy name, ports
-    if group=Fog::AWS::Compute.security_groups.get(name)
+    if group=Fog::Compute[:aws].security_groups.get(name)
       group.delete
+    end
+  end
+
+  def self.add_public_ports group, ports
+    ports.each do |range|
+      range = range.respond_to?(:min) ? range : (range .. range)
+      group.authorize_port_range(range)
+    end
+  end
+
+  def self.add_group_ports group, other_name, ports
+    external_group = Fog::Compute[:aws].security_groups.get(other_name)
+    owner_id = external_group.owner_id
+    aws_sepc = {owner_id => external_group.to_s}
+    ports.each do |port|
+      range = port.respond_to?(:min) ? port : (port .. port)
+      group.authorize_port_range range, group: aws_spec
+    end
+  end
+
+  def self.delete_all_rules group
+    group.ip_permissions.each do |perm|
+      ports = (perm['fromPort'] .. perm['toPort'])
+      if perm['groups'].any?
+        perm['groups'].each do |g|
+          owner_id = Fog::Compute[:aws].security_groups.get(g).owner_id
+          group.revoke_group_and_owner(g, owner_id)
+        end
+      else
+        group.revoke_port_range(ports)
+      end
     end
   end
 end
@@ -102,7 +134,7 @@ class HostRecord # :nodoc:
 
         desc "Provision #{name} with chef"
         task :provision do
-          HostRecord.provision name, runlist
+          HostRecord.provision name, runlist, options
         end
 
         desc "Create #{name} host"
@@ -125,20 +157,18 @@ class HostRecord # :nodoc:
     size = options[:size] || Fog.credentials[:size]
     image = options[:image_id] || Fog.credentials[:image_id]
     server = Fog::Compute[:aws].servers.create(groups: security_groups,
-                                               key_name: key_name,
+                                               key_name: key,
                                                flavor_id: size,
                                                image_id: image,
                                                tags: {'Name' => name})
-    Fog.wait_for { server.reload? ; server.ready? }
+    Fog.wait_for { server.reload ; server.ready? }
   end
 
   def self.provision name, runlist, options
-    unless File.file('knife.rb')
-      abort "stopeed at `rake host:#{name}:provision` - missing knife.rb"
-    end
     instance = get_instance
     key_name = options[:key_name] || Fog.credentials[:key_name]
-    system "knife bootstrap #{instance.public_dns_name} " +
+    system "knife #{'solo' if options[:knife_solo]} bootstrap "
+           "#{instance.public_dns_name} " +
            "--indentity_file ~/.ssh/#{key_name}.pem --forward-agent " +
            "--ssh-user ubuntu --sudo --node-name #{name} --run-list #{runlist}"
   end

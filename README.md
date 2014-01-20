@@ -12,7 +12,24 @@ This is all for AWS right now.
 
 # Example
 
-Rakefile:
+### ~/.fog
+
+First, set up your ~/.fog file with credentials and defaults:
+
+    :production:
+      :aws_access_key_id: XXXXXXXXXXXXXXXXX
+      :aws_secret_access_key: XXXXXXXXXXXXXXXXXX
+      :region: us-east-1
+      :key_name: production
+      :image_id: ami-9b85eef2
+      :flavor_id: t1.micro
+
+Your key_name field should have a matching ~/.ssh/{key_name}.pem file. If you
+name the group in fog anything other than `default` you will need to use the
+FOG_CREDENTIAL environment variable when running rake.
+
+
+### Rakefile
 
     require_relative 'lib/ponyup'
 
@@ -22,9 +39,11 @@ Rakefile:
 
     task :default => :ponyup
 
+### Invodation
+
 To set up your full set of hosts and security groups:
 
-    rake
+    rake FOG_CREDENTIAL=production
 
 To tear down your server:
 
