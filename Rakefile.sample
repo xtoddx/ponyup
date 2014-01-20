@@ -1,0 +1,6 @@
+require_relative 'lib/ponyup'
+
+security 'ssh', 22
+secrity 'web', 80
+
+host 'appserver', ['ssh', 'web']
