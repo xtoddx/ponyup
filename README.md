@@ -21,3 +21,19 @@ Rakefile:
     host 'appserver', 'web', 'recipe[appserver]'
 
     task :default => :ponyup
+
+To set up your full set of hosts and security groups:
+
+    rake
+
+To tear down your server:
+
+    rake host:appserver:destroy
+
+To see all availabe tasks:
+
+    rake -D
+
+
+[fog]: http://fog.io/
+[rake]: http://rake.rubyforge.org/
