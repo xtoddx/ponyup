@@ -39,7 +39,7 @@ FOG_CREDENTIAL environment variable when running rake.
 
     task :default => :ponyup
 
-### Invodation
+### Invocation
 
 To set up your full set of hosts and security groups:
 
