@@ -99,7 +99,7 @@ class SecurityRecord # :nodoc:
   def self.add_group_ports group, other_name, ports
     external_group = Fog::Compute[:aws].security_groups.get(other_name)
     owner_id = external_group.owner_id
-    aws_sepc = {owner_id => external_group.to_s}
+    aws_spec = {owner_id => external_group.to_s}
     ports.each do |port|
       range = port.respond_to?(:min) ? port : (port .. port)
       group.authorize_port_range range, group: aws_spec
@@ -165,6 +165,7 @@ class HostRecord # :nodoc:
   end
 
   def self.provision name, runlist, options
+    return if runlist.to_s.empty? && !options[:knife_solo]
     instance = get_instance(name)
     key_name = options[:key_name] || Fog.credentials[:key_name]
     if options[:knife_solo]
