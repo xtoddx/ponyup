@@ -98,8 +98,7 @@ class SecurityRecord # :nodoc:
 
   def self.add_group_ports group, other_name, ports
     external_group = Fog::Compute[:aws].security_groups.get(other_name)
-    owner_id = external_group.owner_id
-    aws_spec = {owner_id => external_group.name}
+    aws_spec = {external_group.owner_id => external_group.name}
     ports.each do |port|
       range = port.respond_to?(:min) ? port : (port .. port)
       group.authorize_port_range range, group: aws_spec
@@ -111,8 +110,8 @@ class SecurityRecord # :nodoc:
       ports = (perm['fromPort'] .. perm['toPort'])
       if perm['groups'].any?
         perm['groups'].each do |g|
-          owner_id = Fog::Compute[:aws].security_groups.get(g).owner_id
-          group.revoke_group_and_owner(g, owner_id)
+          group_spec = {g['userId'] => g['groupId']}
+          group.revoke_port_range(ports, group: group_spec)
         end
       else
         group.revoke_port_range(ports)
