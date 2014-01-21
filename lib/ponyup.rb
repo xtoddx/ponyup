@@ -180,6 +180,10 @@ class HostRecord # :nodoc:
     end
   end
 
+  def self.destroy name
+    get_instance(name).destroy
+  end
+
   def self.get_instance name
     Fog::Compute[:aws].servers.all('tag:Name' => name,
                                    'instance-state-name' => 'running').first
