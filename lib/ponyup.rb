@@ -169,7 +169,7 @@ class HostRecord # :nodoc:
     key_name = options[:key_name] || Fog.credentials[:key_name]
     if options[:knife_solo]
       system "knife solo bootstrap ubuntu@#{instance.dns_name} " +
-             "#{options[:attributes]}" +
+             "#{options[:attributes]} " +
              "--identity-file ~/.ssh/#{key_name}.pem --node-name #{name}" +
              "--run-list #{runlist}"
     else
