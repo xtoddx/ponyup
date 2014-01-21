@@ -99,7 +99,7 @@ class SecurityRecord # :nodoc:
   def self.add_group_ports group, other_name, ports
     external_group = Fog::Compute[:aws].security_groups.get(other_name)
     owner_id = external_group.owner_id
-    aws_spec = {owner_id => external_group.to_s}
+    aws_spec = {owner_id => external_group.name}
     ports.each do |port|
       range = port.respond_to?(:min) ? port : (port .. port)
       group.authorize_port_range range, group: aws_spec
