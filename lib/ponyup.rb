@@ -167,10 +167,17 @@ class HostRecord # :nodoc:
   def self.provision name, runlist, options
     instance = get_instance
     key_name = options[:key_name] || Fog.credentials[:key_name]
-    system "knife #{'solo' if options[:knife_solo]} bootstrap "
-           "#{instance.public_dns_name} " +
-           "--indentity_file ~/.ssh/#{key_name}.pem --forward-agent " +
-           "--ssh-user ubuntu --sudo --node-name #{name} --run-list #{runlist}"
+    if options[:knife_solo]
+      system "knife solo bootstrap ubuntu@#{instance.public_dns_name} " +
+             "#{options[:attributes]}" +
+             "--indentity_file ~/.ssh/#{key_name}.pem --node-name #{name}" +
+             "--run-list #{runlist}"
+    else
+      system "knife bootstrap #{instance.public_dns_name} " +
+             "--indentity_file ~/.ssh/#{key_name}.pem --forward-agent " +
+             "--ssh-user ubuntu --sudo --node-name #{name} " +
+             "--run-list #{runlist}"
+    end
   end
 
   def self.get_instance name

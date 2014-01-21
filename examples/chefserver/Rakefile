@@ -1,0 +1,9 @@
+require_relative '../../lib/ponyup'
+
+# 22 lets us run `knife solo bootstrap ...`
+# 443 is for the actual chef traffic.
+security 'chef', [22, 443]
+
+# The runlist is specified in dna.json, not here.
+# This is a limitation of knife-solo.
+host 'chefserver', 'chef', runlist='', kinfe_solo: true, attributes: 'dna.json'
