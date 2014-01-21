@@ -170,11 +170,11 @@ class HostRecord # :nodoc:
     if options[:knife_solo]
       system "knife solo bootstrap ubuntu@#{instance.dns_name} " +
              "#{options[:attributes]}" +
-             "--indentity_file ~/.ssh/#{key_name}.pem --node-name #{name}" +
+             "--identity-file ~/.ssh/#{key_name}.pem --node-name #{name}" +
              "--run-list #{runlist}"
     else
       system "knife bootstrap #{instance.dns_name} " +
-             "--indentity_file ~/.ssh/#{key_name}.pem --forward-agent " +
+             "--identity-file ~/.ssh/#{key_name}.pem --forward-agent " +
              "--ssh-user ubuntu --sudo --node-name #{name} " +
              "--run-list #{runlist}"
     end
