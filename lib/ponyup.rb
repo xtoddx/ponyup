@@ -1,39 +1,54 @@
 require 'fog'
 
+module Ponyup
+  module RakeDefinitions
+    # Define a security group.
+    #
+    # To define a group that allows public access:
+    #
+    #     security 'vulnerable', [22, 80]
+    #     security 'webish', 443
+    #
+    # To define an internal network accessible by instances on other groups:
+    #
+    #     security 'shadows', [], vulnerable: [22]
+    #     security 'shadows', nil, vulnerable: 22
+    #
+    # To define a group that allows both public and internal net traffic:
+    #
+    #     security 'hybrid', 22, shadows: 8080
+    #     security 'hybrid', [22, 80], shadows: 8080
+    #
+    def security name, public_ports=[], group_ports={}
+      security_namespace = SecurityRecord.define name, public_ports, group_ports
+      CloudRunner.add_component security_namespace
+    end
+
+    # Define a server.
+    #
+    # Options: key_name, image_id, size, knife_solo, attributes (filename)
+    #
+    def host name, security_groups, runlist, options={}
+      host_namespace = HostRecord.define name, security_groups, runlist, options
+      CloudRunner.add_component host_namespace
+    end
+  end
+end
+
+# Include the defintions at the top level for Rakefiles.
+include Ponyup::RakeDefinitions
+
+# Set the access credentials.
 Fog.credential = (ENV['FOG_CREDENTIAL'] || :staging).to_sym
 
-# Define a security group.
+# Provides the `ponyup`/`ponydown` tasks for top-level entrypoints.
 #
-# To define a group that allows public access:
+# Also provides a simple way for other tasks to register themselves as a
+# prerequisite during both up and down actions.
 #
-#     security 'vulnerable', [22, 80]
-#     security 'webish', 443
+# :nodoc:
 #
-# To define an internal network accessible by instances on other groups:
-#
-#     security 'shadows', [], vulnerable: [22]
-#     security 'shadows', nil, vulnerable: 22
-#
-# To define a group that allows both public and internal net traffic:
-#
-#     security 'hybrid', 22, shadows: 8080
-#     security 'hybrid', [22, 80], shadows: 8080
-#
-def security name, public_ports=[], group_ports={}
-  security_namespace = SecurityRecord.define name, public_ports, group_ports
-  CloudRunner.add_component security_namespace
-end
-
-# Define a server.
-#
-# Options: key_name, image_id, size, knife_solo, attributes (filename)
-#
-def host name, security_groups, runlist, options={}
-  host_namespace = HostRecord.define name, security_groups, runlist, options
-  CloudRunner.add_component host_namespace
-end
-
-class CloudRunner # :nodoc:
+class CloudRunner
   extend Rake::DSL
   def self.add_component namespace
     task 'ponyup' => "#{namespace}:create"
@@ -41,7 +56,13 @@ class CloudRunner # :nodoc:
   end
 end
 
-class SecurityRecord # :nodoc:
+# see: {Ponyup::RakeDefinitions#security}
+#
+# Does the heavy lifing for working with security groups.
+#
+# :nodoc:
+#
+class SecurityRecord
   extend Rake::DSL
 
   # Return the namespace as string
@@ -120,6 +141,12 @@ class SecurityRecord # :nodoc:
   end
 end
 
+# see: {Ponyup::RakeDefinitions#host}
+#
+# Does the heavy lifting for dealing with hosts.
+#
+# :nodoc:
+#
 class HostRecord # :nodoc:
   extend Rake::DSL
 
