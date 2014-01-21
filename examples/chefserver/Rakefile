@@ -6,6 +6,6 @@ security 'chef', [22, 443]
 
 # The runlist is specified in dna.json, not here.
 # This is a limitation of knife-solo.
-host 'chefserver', 'chef', runlist='', kinfe_solo: true, attributes: 'dna.json'
+host 'chefserver', 'chef', runlist='', knife_solo: true, attributes: 'dna.json'
 
 task :default => :ponyup
