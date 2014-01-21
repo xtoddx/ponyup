@@ -1,6 +1,6 @@
 # Pony Up
-A friendly DSL on top of [Rake](rake) to define and launch your cloud services.
-Uses [Fog](fog) to talk to the cloud.
+A friendly DSL on top of [Rake][rake] to define and launch your cloud services.
+Uses [Fog][fog] to talk to the cloud.
 
 This is all for AWS right now.
 
@@ -55,7 +55,7 @@ To see all availabe tasks:
 
 # Examples
 
-There are examples in the [exmaples/](examples) directory.
+There are examples in the [exmaples/][examples] directory.
 
 [fog]: http://fog.io/
 [rake]: http://rake.rubyforge.org/
