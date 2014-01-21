@@ -10,7 +10,7 @@ This is all for AWS right now.
 * Everything at a higher level can be done by chef
 * Provide the transition from lower layer (fog) to apps (chef)
 
-# Example
+# Overview
 
 ### ~/.fog
 
@@ -47,12 +47,16 @@ To set up your full set of hosts and security groups:
 
 To tear down your server:
 
-    rake host:appserver:destroy
+    rake host:appserver:destroy [FOG_CREDENTIAL=...]
 
 To see all availabe tasks:
 
     rake -D
 
+# Examples
+
+There are examples in the [exmaples/](examples) directory.
 
 [fog]: http://fog.io/
 [rake]: http://rake.rubyforge.org/
+[examples]: http://github.com/xtoddx/ponyup/tree/master/examples
