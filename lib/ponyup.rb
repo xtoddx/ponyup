@@ -29,7 +29,7 @@ end
 # Options: key_name, image_id, size, knife_solo, attributes (filename)
 #
 def host name, security_groups, runlist, options={}
-  host_namespace = HostRecord.define name, security_groups, runlist
+  host_namespace = HostRecord.define name, security_groups, runlist, options
   CloudRunner.add_component host_namespace
 end
 
