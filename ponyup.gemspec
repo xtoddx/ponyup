@@ -3,7 +3,7 @@ Gem::Specification.new do |s|
   s.required_rubygems_version = Gem::Requirement.new('>= 0')
 
   s.name = 'ponyup'
-  s.version = '0.0.1'
+  s.version = '0.0.2'
   s.date = '2014-01-21'
   s.summary = 'Manage virtual machines from cloud setup to chef provisioning'
   s.description = 'Ponyup uses fog to manipulate clouds to get the them to the point you want use chef for provisioning, and then uses kinfe to bootstrap the nodes'
