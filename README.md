@@ -55,7 +55,7 @@ To see all availabe tasks:
 
 # Examples
 
-There are examples in the [exmaples/][examples] directory.
+There are examples in the [examples/][examples] directory.
 
 [fog]: http://fog.io/
 [rake]: http://rake.rubyforge.org/
