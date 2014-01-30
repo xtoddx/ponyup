@@ -14,8 +14,7 @@ module Ponyup
       end
 
       def create
-        group = Fog::Compute[:aws].security_groups.get(name)
-        if group
+        if group=cloud_resource
           converge_existing_resource(group)
         else
           create_new_resource
@@ -23,7 +22,7 @@ module Ponyup
       end
 
       def destroy
-        if group=Fog::Compute[:aws].security_groups.get(resource_name)
+        if group=cloud_resource
           group.delete
         end
       end
@@ -32,6 +31,10 @@ module Ponyup
 
       def resource_name
         "#{@name}#{Ponyup.resource_suffix}"
+      end
+
+      def cloud_resource
+        Fog::Compute[:aws].security_groups.get(resource_name)
       end
 
       def create_new_resoruce
@@ -72,6 +75,24 @@ module Ponyup
         end
       end
 
+      def add_public_ports group, ports
+        ports.each do |range|
+          range = range.respond_to?(:min) ? range : (range .. range)
+          group.authorize_port_range(range)
+        end
+      end
+
+      def add_group_ports group, other_name, ports
+        other_name = "#{other_name}#{Ponyup.resource_suffix}"
+        external_group = Fog::Compute[:aws].security_groups.get(other_name)
+        aws_spec = {external_group.owner_id => external_group.name}
+        ports.each do |port|
+          range = port.respond_to?(:min) ? port : (port .. port)
+          group.authorize_port_range range, group: aws_spec
+        end
+      end
+
+
       # JUNKY OLD RAKE STUFF
       public
 
@@ -97,24 +118,6 @@ module Ponyup
         desc description
         task named_method.keys.first, &named_method.values.first
       end
-
-
-      def self.add_public_ports group, ports
-        ports.each do |range|
-          range = range.respond_to?(:min) ? range : (range .. range)
-          group.authorize_port_range(range)
-        end
-      end
-
-      def self.add_group_ports group, other_name, ports
-        external_group = Fog::Compute[:aws].security_groups.get(other_name)
-        aws_spec = {external_group.owner_id => external_group.name}
-        ports.each do |port|
-          range = port.respond_to?(:min) ? port : (port .. port)
-          group.authorize_port_range range, group: aws_spec
-        end
-      end
-
     end
   end
 end

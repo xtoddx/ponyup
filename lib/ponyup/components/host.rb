@@ -7,73 +7,75 @@ module Ponyup
     # :nodoc:
     #
     class Host
-      extend Rake::DSL
+      def initialize name, security_groups, _runlist, options
+        @name = name
+        security_groups = Array(security_groups)
+        @groups = security_groups.map {|x| "#{x}#{Ponyup.resource_suffix}" }
+        @options = options
+      end
 
-      def self.define name, security_groups, runlist=[], options={}
+      def create
+        if host=cloud_resource
+          converge_existing_resource(host)
+        else
+          create_new_resource
+        end
+        wait_for_ready
+      end
+
+      def destroy
+        if host=cloud_resource
+          host.destroy
+        end
+      end
+
+      private
+
+      def resource_name
+        "#{@name}#{Ponyup.resource_suffix}"
+      end
+
+      def cloud_resource
+        Fog::Compute[:aws].servers.all('tag:Name' => name,
+                                       'instance-state-name' => 'running').first
+      end
+
+      def create_new_resource
+        key = options[:key_name] || Fog.credentials[:key_name]
+        size = options[:size] || Fog.credentials[:size]
+        image = options[:image_id] || Fog.credentials[:image_id]
+        Fog::Compute[:aws].servers.create(groups: security_groups,
+                                          key_name: key,
+                                          flavor_id: size,
+                                          image_id: image,
+                                          tags: {'Name' => name})
+      end
+
+      def wait_for_ready
+        host = cloud_resource
+        Fog.wait_for { server.reload ; server.ready? }
+      end
+
+
+      # Dumb old rake junk
+      public
+
+      extend Rake::DSL
+      def self.define name, security_groups, _runlist=[], options={}
+        instance = new(name, security_groups, _runlist, options)
         namespace :host do
           namespace name do
-            desc "Launch #{name} in the cloud"
-            task :spinup do
-              HostRecord.launch name, security_groups, options
-            end
-
-            desc "Provision #{name} with chef"
-            task :provision do
-              HostRecord.provision name, runlist, options
-            end
-
-            desc "Create #{name} host"
-            task :create => [:spinup, :provision]
-
-            desc "Delete #{name} security group"
-            task :destroy do
-              HostRecord.destroy name
-            end
+            instance_task "Launch #{name}", create: instance.method(:create)
+            instance_task "Terminate #{name}",
+                          destroy: instance.method(:destroy)
           end
         end
         "host:#{name}"
       end
 
-      def self.launch name, security_groups, options
-        if existing=get_instance(name)
-          existing.destroy
-        end
-        key = options[:key_name] || Fog.credentials[:key_name]
-        size = options[:size] || Fog.credentials[:size]
-        image = options[:image_id] || Fog.credentials[:image_id]
-        server = Fog::Compute[:aws].servers.create(groups: security_groups,
-                                                   key_name: key,
-                                                   flavor_id: size,
-                                                   image_id: image,
-                                                   tags: {'Name' => name})
-        Fog.wait_for { server.reload ; server.ready? }
-      end
-
-      def self.provision name, runlist, options
-        return if runlist.to_s.empty? && !options[:knife_solo]
-        instance = get_instance(name)
-        key_name = options[:key_name] || Fog.credentials[:key_name]
-        if options[:knife_solo]
-          system "knife solo bootstrap ubuntu@#{instance.dns_name} " +
-                 "#{options[:attributes]} " +
-                 "--identity-file ~/.ssh/#{key_name}.pem --node-name #{name} " +
-                 "--forward-agent --sudo-command \"sudo -E\" " +
-                 "#{"--run-list #{runlist}" if runlist}"
-        else
-          system "knife bootstrap #{instance.dns_name} " +
-                 "--identity-file ~/.ssh/#{key_name}.pem --forward-agent " +
-                 "--ssh-user ubuntu --sudo --node-name #{name} " +
-                 "--run-list #{runlist}"
-        end
-      end
-
-      def self.destroy name
-        get_instance(name).destroy
-      end
-
-      def self.get_instance name
-        Fog::Compute[:aws].servers.all('tag:Name' => name,
-                                       'instance-state-name' => 'running').first
+      def self.instance_task description, named_method
+        desc description
+        task named_method.keys.first, &named_method.values.first
       end
     end
   end
