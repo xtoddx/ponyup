@@ -18,7 +18,7 @@ module Ponyup
     #     security 'hybrid', [22, 80], shadows: 8080
     #
     def security name, public_ports=[], group_ports={}
-      Ponyup::SecurityRecord.define name, public_ports, group_ports
+      Ponyup::Components::Security.define name, public_ports, group_ports
       Ponyup::Runner.add_component "security:#{name}"
     end
 
@@ -26,8 +26,8 @@ module Ponyup
     #
     # Options: key_name, image_id, size, knife_solo, attributes (filename)
     #
-    def host name, security_groups, runlist, options={}
-      HostRecord.define name, security_groups, runlist, options
+    def host name, security_groups, runlist=nil, options={}
+      Ponyup::Components::Host.define name, security_groups, runlist, options
       Ponyup::Runner.add_component "host:#{name}"
     end
 
@@ -40,3 +40,4 @@ module Ponyup
       Ponyup::Runner.add_setup_task "host:#{hostname}:provision"
     end
   end
+end

@@ -4,14 +4,14 @@ module Ponyup
   class << self
     attr_accessor :resource_suffix
   end
-  self.resoruce_suffix = ''
+  self.resource_suffix = ''
 
-  autoload RakeDefinitions, 'ponyup/rake_definitions'
-  autoload Runner, 'ponyup/runner'
+  autoload :RakeDefinitions, 'ponyup/rake_definitions'
+  autoload :Runner, 'ponyup/runner'
 
   module Components
-    autoload Security, 'ponyup/components/security'
-    autoload Host, 'ponyup/components/host'
+    autoload :Security, 'ponyup/components/security'
+    autoload :Host, 'ponyup/components/host'
   end
 end
 

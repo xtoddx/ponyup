@@ -6,7 +6,7 @@ module Ponyup
     #
     # :nodoc:
     #
-    class HostRecord # :nodoc:
+    class Host
       extend Rake::DSL
 
       def self.define name, security_groups, runlist=[], options={}

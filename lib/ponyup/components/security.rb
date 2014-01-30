@@ -6,7 +6,7 @@ module Ponyup
     #
     # :nodoc:
     #
-    class SecurityRecord
+    class Security
       extend Rake::DSL
 
       # Return the namespace as string
