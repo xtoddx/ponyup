@@ -31,12 +31,12 @@ module Ponyup
       Ponyup::Runner.add_component "host:#{name}"
     end
 
-    # Define a process for configuring server.
+    # Define a knife-solo process for configuring server.
     #
     # See the provisioner docs for argument list.
     #
-    def provision hostname, provisioner, *provisioner_args
-      Ponyup::Provisioner.define hostname, provisioner, *provisioner_args
+    def knife_solo hostname, options={}
+      Ponyup::Provisioners::KnifeSolo.define hostname, options
       Ponyup::Runner.add_setup_task "host:#{hostname}:provision"
     end
   end
