@@ -13,6 +13,10 @@ module Ponyup
     autoload :Security, 'ponyup/components/security'
     autoload :Host, 'ponyup/components/host'
   end
+
+  module Provisioners
+    autoload :KnifeSolo, 'ponyup/provisioners/knife_solo'
+  end
 end
 
 # Include the defintions at the top level for Rakefiles.

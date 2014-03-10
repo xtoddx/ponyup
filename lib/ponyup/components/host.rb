@@ -44,7 +44,7 @@ module Ponyup
       end
 
       def cloud_resource
-        Fog::Compute[:aws].servers.all('tag:Name' => @name,
+        Fog::Compute[:aws].servers.all('tag:Name' => resource_name,
                                        'instance-state-name' => 'running').first
       end
 
