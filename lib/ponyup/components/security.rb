@@ -23,7 +23,15 @@ module Ponyup
 
       def destroy
         if group=cloud_resource
-          group.delete
+          group.destroy
+        end
+      end
+
+      def status
+        if group=cloud_resource
+          puts " up : security:#{@name} #{status_inbound_rules(group)}"
+        else
+          puts "down: security:#{@name}"
         end
       end
 
@@ -37,9 +45,9 @@ module Ponyup
         Fog::Compute[:aws].security_groups.get(resource_name)
       end
 
-      def create_new_resoruce
-        group = Fog::Compute[:aws].security_groups.new(name: name,
-                                          description: "#{name} [auto]")
+      def create_new_resource
+        group = Fog::Compute[:aws].security_groups.new(name: resource_name,
+                                          description: "#{@name} [auto]")
         group.save
         add_ports_to_group group
       end
@@ -64,11 +72,11 @@ module Ponyup
       end
 
       def add_ports_to_group group
-        unless public_ports.empty?
-          add_public_ports(group, public_ports)
+        unless @public_ports.empty?
+          add_public_ports(group, @public_ports)
         end
-        unless group_ports.empty?
-          group_ports.each do |extern_group, ports|
+        unless @group_ports.empty?
+          @group_ports.each do |extern_group, ports|
             ports = Array(ports)
             add_group_ports(group, extern_group, ports)
           end
@@ -83,15 +91,53 @@ module Ponyup
       end
 
       def add_group_ports group, other_name, ports
-        other_name = "#{other_name}#{Ponyup.resource_suffix}"
-        external_group = Fog::Compute[:aws].security_groups.get(other_name)
-        aws_spec = {external_group.owner_id => external_group.name}
+        # with a slash is something like "amazon-elb/amazon-elb"
+        # which does not need a suffix. This assumes the account is not the
+        # same as the one for the current group, or else the user would have
+        # passed only the security group name
+        if other_name.to_s.include?('/')
+          owner, name = other_name.split('/')
+          aws_spec = {owner => name}
+        else
+          other_name = "#{other_name}#{Ponyup.resource_suffix}"
+          external_group = Fog::Compute[:aws].security_groups.get(other_name)
+          aws_spec = {external_group.owner_id => external_group.name}
+        end
         ports.each do |port|
           range = port.respond_to?(:min) ? port : (port .. port)
           group.authorize_port_range range, group: aws_spec
         end
       end
 
+      def status_inbound_rules group
+        rules = []
+        group.ip_permissions.each do |inbound|
+          ip_range = status_ip_range(inbound['fromPort'], inbound['toPort'])
+          if inbound['groups'].empty?
+            rules << "PUBLIC => #{ip_range}"
+          end
+          inbound['groups'].each do |group_spec|
+            rules << "#{status_group_name(group_spec, group)} => #{ip_range}"
+          end
+        end
+        rules.join("; ")
+      end
+
+      def status_ip_range from_port, to_port
+        if from_port == to_port
+          from_port
+        else
+          "#{from_port}-#{to_port}"
+        end
+      end
+
+      def status_group_name group_spec, group
+        full_name = "#{group_spec['groupName']}"
+        if group_spec['userId'] != group.owner_id
+          full_name = "#{group_spec['userId']}/#{full_name}"
+        end
+        full_name
+      end
 
       # JUNKY OLD RAKE STUFF
       public
@@ -107,6 +153,8 @@ module Ponyup
                           create: instance.method(:create)
             instance_task "Delete #{name} security group",
                           destroy: instance.method(:destroy)
+            instance_task "Show status of #{name} security group",
+                          status: instance.method(:status)
           end
         end
         "security:#{name}"
@@ -116,7 +164,7 @@ module Ponyup
 
       def self.instance_task description, named_method
         desc description
-        task named_method.keys.first, &named_method.values.first
+        task(named_method.keys.first) { named_method.values.first.call }
       end
     end
   end

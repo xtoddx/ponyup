@@ -18,14 +18,22 @@ module Ponyup
         if host=cloud_resource
           converge_existing_resource(host)
         else
-          create_new_resource
+          host = create_new_resource
         end
-        wait_for_ready
+        wait_for_ready host
       end
 
       def destroy
         if host=cloud_resource
           host.destroy
+        end
+      end
+
+      def status
+        if host=cloud_resource
+          puts " up : host:#{@name} #{host.dns_name}"
+        else
+          puts "down: host:#{@name}"
         end
       end
 
@@ -36,24 +44,23 @@ module Ponyup
       end
 
       def cloud_resource
-        Fog::Compute[:aws].servers.all('tag:Name' => name,
+        Fog::Compute[:aws].servers.all('tag:Name' => @name,
                                        'instance-state-name' => 'running').first
       end
 
       def create_new_resource
-        key = options[:key_name] || Fog.credentials[:key_name]
-        size = options[:size] || Fog.credentials[:size]
-        image = options[:image_id] || Fog.credentials[:image_id]
-        Fog::Compute[:aws].servers.create(groups: security_groups,
+        key = @options[:key_name] || Fog.credentials[:key_name]
+        size = @options[:size] || Fog.credentials[:size]
+        image = @options[:image_id] || Fog.credentials[:image_id]
+        Fog::Compute[:aws].servers.create(groups: @groups,
                                           key_name: key,
                                           flavor_id: size,
                                           image_id: image,
-                                          tags: {'Name' => name})
+                                          tags: {'Name' => @name})
       end
 
-      def wait_for_ready
-        host = cloud_resource
-        Fog.wait_for { server.reload ; server.ready? }
+      def wait_for_ready host
+        Fog.wait_for { host.reload ; host.ready? }
       end
 
 
@@ -68,6 +75,8 @@ module Ponyup
             instance_task "Launch #{name}", create: instance.method(:create)
             instance_task "Terminate #{name}",
                           destroy: instance.method(:destroy)
+            instance_task "Show status of #{name} host",
+                          status: instance.method(:status)
           end
         end
         "host:#{name}"
@@ -75,7 +84,7 @@ module Ponyup
 
       def self.instance_task description, named_method
         desc description
-        task named_method.keys.first, &named_method.values.first
+        task(named_method.keys.first) { named_method.values.first.call }
       end
     end
   end

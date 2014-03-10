@@ -17,7 +17,8 @@ Gem::Specification.new do |s|
   s.files = `git ls-files`.split("\n")
   s.test_files = `git ls-files -- {spec,tests}/*`.split("\n")
 
-  s.add_dependency('fog', '>= 1.19.0')
+  s.add_dependency('fog', '>= 1.20.0')
+  s.add_dependency('rake', '>= 10.1.1')
   #s.add_dependency('chef', '>= 11.8.2')
   #s.add_dependency('knife-solo', '>= 0.4.1')
 end
