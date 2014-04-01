@@ -31,6 +31,20 @@ module Ponyup
       Ponyup::Runner.add_component "host:#{name}"
     end
 
+    # Define a VPC.
+    #
+    def vpc name, cidr
+      Ponyup::Components::Vpc.define name, cidr
+      Ponyup::Runner.add_setup_task "vpc:#{name}:provision"
+    end
+
+    # Define a VPC internet gateway.
+    #
+    def gateway name, vpc
+      Ponyup::Components::Gateway.define name, vpc_name
+      Ponyup::Runner.add_setup_task "gateway:#{name}:provision"
+    end
+
     # Define a knife-solo process for configuring server.
     #
     # See the provisioner docs for argument list.
