@@ -1,15 +1,20 @@
 module Ponyup
   module Components
-    # see: {Ponyup::RakeDefinitions#gateway}
+    # see: {Ponyup::RakeDefinitions#routes}
     #
-    # Does the heavy lifting for dealing with vpc.
+    # Set up routing rules for VPC subnets.
     #
     # :nodoc:
     #
-    class Gateway
-      def initialize name, vpc_name
+    class Routes
+      # Possible options:
+      #
+      # :gateway: name of the gateway to route through
+      #
+      def initialize name, vpc_name, options={}
         @name = name
         @vpc = cidr
+        @options = options
       end
 
       def create
@@ -46,7 +51,7 @@ module Ponyup
       end
 
       def components
-        Fog::Compute[:aws].internet_gateways
+        Fog::Compute[:aws].route_tables
       end
 
       def vpc_id
@@ -54,14 +59,15 @@ module Ponyup
                                                 state: :available).first.id
 
       def cloud_resource
-        components.all('tag:Name' => resource_name, 'state' => 'available',
-                       'vpc-id' => vpc_id).first
+        components.all('tag:Name' => resource_name, 'vpc-id' => vpc_id).first
       end
 
       def create_new_resource
-        gateway = components.create(tags: {'Name' => @name})
-        gateway.attach(vpc_id)
-        gateway
+        resource = components.create(vpc_id: vpc_id, tags: {'Name' => @name})
+        if @options[:gateway]
+          # TODO: make this happen
+        end
+        resource
       end
 
       def wait_for_ready resource
