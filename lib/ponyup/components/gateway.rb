@@ -56,18 +56,20 @@ module Ponyup
       end
 
       def cloud_resource
-        components.all('tag:Name' => resource_name, 'state' => 'available',
-                       'vpc-id' => vpc_id).first
+        components.all('tag:Name' => resource_name).first
       end
 
       def create_new_resource
-        gateway = components.create(tags: {'Name' => @name})
-        gateway.attach(vpc_id)
+        gateway = components.create
+        if vpc_id
+          gateway.attach(vpc_id)
+        end
+        gateway.service.create_tags gateway.id, {'Name' => @name}
         gateway
       end
 
       def wait_for_ready resource
-        resource.wait_for { ready? }
+        true
       end
 
 
@@ -75,8 +77,8 @@ module Ponyup
       public
 
       extend Rake::DSL
-      def self.define name, cidr
-        instance = new(name, cidr)
+      def self.define name, vpc_name
+        instance = new(name, vpc_name)
         namespace :gateway do
           namespace name do
             instance_task "Launch #{name}", create: instance.method(:create)
