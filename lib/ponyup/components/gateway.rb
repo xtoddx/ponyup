@@ -2,14 +2,14 @@ module Ponyup
   module Components
     # see: {Ponyup::RakeDefinitions#gateway}
     #
-    # Does the heavy lifting for dealing with vpc.
+    # Does the heavy lifting for mapping subnets to internets.
     #
     # :nodoc:
     #
     class Gateway
       def initialize name, vpc_name
         @name = name
-        @vpc = cidr
+        @vpc_name = vpc_name
       end
 
       def create
@@ -50,8 +50,10 @@ module Ponyup
       end
 
       def vpc_id
-        @vpc_id ||= Fog::Compute[:aws].vpcs.all('tag:Name' => @vpc,
+        return nil unless @vpc_name
+        @vpc_id ||= Fog::Compute[:aws].vpcs.all('tag:Name' => @vpc_name,
                                                 state: :available).first.id
+      end
 
       def cloud_resource
         components.all('tag:Name' => resource_name, 'state' => 'available',

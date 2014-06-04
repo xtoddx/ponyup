@@ -1,15 +1,16 @@
 module Ponyup
   module Components
-    # see: {Ponyup::RakeDefinitions#vpc}
+    # see: {Ponyup::RakeDefinitions#subnet}
     #
-    # Does the heavy lifting for dealing with vpc.
+    # Does the heavy lifting for creating netwok infrastructure in a vpc.
     #
     # :nodoc:
     #
-    class Vpc
-      def initialize name, cidr
+    class Subnet
+      def initialize name, cidr, vpc_name
         @name = name
         @cidr = cidr
+        @vpc_name = vpc_name
       end
 
       def create
@@ -46,22 +47,29 @@ module Ponyup
       end
 
       def components
-        Fog::Compute[:aws].vpcs
+        Fog::Compute[:aws].subnets
       end
 
       def cloud_resource
         components.all('tag:Name' => resource_name,
-                       'state' => 'available').first
+                       'state' => 'available',
+                       'vpc_id' => vpc_id).first
       end
 
       def create_new_resource
-        component = components.create(cidr_block: @cidr)
-        component.service.create_tags(component.id, {'Name' => @name})
-        component
+        components.create(cidr_block: @cidr,
+                          tags: {'Name' => @name},
+                          vpc_id: vpc_id)
       end
 
       def wait_for_ready resource
         resource.wait_for { ready? }
+      end
+
+      def vpc_id
+        return nil unless @vpc_name
+        Fog::Compute[:aws].vpc.all('tag:Name' => @vpc_name,
+                                   'state' => 'available').first.id
       end
 
 
@@ -69,9 +77,9 @@ module Ponyup
       public
 
       extend Rake::DSL
-      def self.define name, cidr
-        instance = new(name, cidr)
-        namespace :vpc do
+      def self.define name, cidr, vpc_name
+        instance = new(name, cidr, vpc_name)
+        namespace :subnet do
           namespace name do
             instance_task "Launch #{name}", create: instance.method(:create)
             instance_task "Terminate #{name}",
@@ -80,7 +88,7 @@ module Ponyup
                           status: instance.method(:status)
           end
         end
-        "vpc:#{name}"
+        "subnet:#{name}"
       end
 
       def self.instance_task description, named_method
