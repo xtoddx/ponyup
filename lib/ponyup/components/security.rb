@@ -7,10 +7,11 @@ module Ponyup
     # :nodoc:
     #
     class Security
-      def initialize name, public_ports=[], group_port_hash={}
+      def initialize name, public_ports=[], group_port_hash={}, options={}
         @name = name
         @public_ports = Array(public_ports)
         @group_ports = group_port_hash
+        @options = options
       end
 
       def create
@@ -41,13 +42,18 @@ module Ponyup
         "#{@name}#{Ponyup.resource_suffix}"
       end
 
+      def components
+        Fog::Compute[:aws].security_groups
+      end
+
       def cloud_resource
-        Fog::Compute[:aws].security_groups.get(resource_name)
+        components.all('group-name' => resource_name, 'vpc-id' => vpc_id).first
       end
 
       def create_new_resource
-        group = Fog::Compute[:aws].security_groups.new(name: resource_name,
-                                          description: "#{@name} [auto]")
+        group = components.new(name: resource_name,
+                               vpc_id: vpc_id,
+                               description: "#{@name} [auto]")
         group.save
         add_ports_to_group group
       end
@@ -100,7 +106,8 @@ module Ponyup
           aws_spec = {owner => name}
         else
           other_name = "#{other_name}#{Ponyup.resource_suffix}"
-          external_group = Fog::Compute[:aws].security_groups.get(other_name)
+          external_group = resources.all('group-name' => other_name,
+                                         'vpc-id' => vpc_id).first
           aws_spec = {external_group.owner_id => external_group.name}
         end
         ports.each do |port|
@@ -139,14 +146,20 @@ module Ponyup
         full_name
       end
 
+      def vpc_id
+        return nil unless @options[:vpc]
+        Fog::Compute[:aws].vpcs.all('tag:Name' => @options[:vpc],
+                                    'state' => 'available').first.id
+      end
+
       # JUNKY OLD RAKE STUFF
       public
 
       extend Rake::DSL
 
       # Return the namespace as string
-      def self.define name, public_ports, group_ports
-        instance = new(name, public_ports, group_ports)
+      def self.define name, public_ports, group_ports, options
+        instance = new(name, public_ports, group_ports, options)
         namespace :security do
           namespace name do
             instance_task "Create #{name} security group",

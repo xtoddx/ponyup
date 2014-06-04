@@ -43,9 +43,14 @@ module Ponyup
         "#{@name}#{Ponyup.resource_suffix}"
       end
 
+      def components
+        Fog::Compute[:aws].servers
+      end
+
       def cloud_resource
-        Fog::Compute[:aws].servers.all('tag:Name' => resource_name,
-                                       'instance-state-name' => 'running').first
+        components.all('tag:Name' => resource_name,
+                       'instance-state-name' => 'running',
+                       'vpc-id' => vpc_id).first
       end
 
       def create_new_resource
@@ -61,6 +66,12 @@ module Ponyup
 
       def wait_for_ready host
         Fog.wait_for { host.reload ; host.ready? }
+      end
+
+      def vpc_id
+        return nil unless @options[:vpc]
+        Fog::Compute[:aws].vpcs.all('tag:Name' => @options[:vpc],
+                                    'state' => 'available').first.id
       end
 
 

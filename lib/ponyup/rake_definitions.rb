@@ -17,8 +17,8 @@ module Ponyup
     #     security 'hybrid', 22, shadows: 8080
     #     security 'hybrid', [22, 80], shadows: 8080
     #
-    def security name, public_ports=[], group_ports={}
-      Ponyup::Components::Security.define name, public_ports, group_ports
+    def security name, public_ports=[], group_ports={}, options={}
+      Ponyup::Components::Security.define name, public_ports, group_ports, options
       Ponyup::Runner.add_component "security:#{name}"
     end
 
