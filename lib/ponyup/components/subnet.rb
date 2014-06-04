@@ -53,13 +53,14 @@ module Ponyup
       def cloud_resource
         components.all('tag:Name' => resource_name,
                        'state' => 'available',
-                       'vpc_id' => vpc_id).first
+                       'vpc-id' => vpc_id).first
       end
 
       def create_new_resource
-        components.create(cidr_block: @cidr,
-                          tags: {'Name' => @name},
-                          vpc_id: vpc_id)
+        component = components.create(cidr_block: @cidr,
+                                      vpc_id: vpc_id)
+        component.service.create_tags(component.subnet_id, {'Name' => @name})
+        component
       end
 
       def wait_for_ready resource
@@ -68,8 +69,8 @@ module Ponyup
 
       def vpc_id
         return nil unless @vpc_name
-        Fog::Compute[:aws].vpc.all('tag:Name' => @vpc_name,
-                                   'state' => 'available').first.id
+        Fog::Compute[:aws].vpcs.all('tag:Name' => @vpc_name,
+                                    'state' => 'available').first.id
       end
 
 
