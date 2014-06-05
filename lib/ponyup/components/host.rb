@@ -57,21 +57,31 @@ module Ponyup
         key = @options[:key_name] || Fog.credentials[:key_name]
         size = @options[:size] || Fog.credentials[:size]
         image = @options[:image_id] || Fog.credentials[:image_id]
-        Fog::Compute[:aws].servers.create(groups: @groups,
-                                          key_name: key,
-                                          flavor_id: size,
-                                          image_id: image,
-                                          tags: {'Name' => @name})
+        components.create(groups: @groups,
+                          key_name: key,
+                          flavor_id: size,
+                          image_id: image,
+                          subnet_id: subnet_id,
+                          tags: {'Name' => @name})
       end
 
       def wait_for_ready host
         Fog.wait_for { host.reload ; host.ready? }
       end
 
+      def subnet
+        return nil unless @options[:subnet]
+        @subnet ||= Fog::Compute[:aws].subnets.all(
+                        'tag:Name' => @options[:subnet]).first
+      end
+
+      def subnet_id
+        subnet ? subnet.subnet_id : nil
+      end
+
       def vpc_id
-        return nil unless @options[:vpc]
-        Fog::Compute[:aws].vpcs.all('tag:Name' => @options[:vpc],
-                                    'state' => 'available').first.id
+        return nil unless subnet
+        subnet.vpc_id
       end
 
 
