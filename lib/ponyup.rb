@@ -12,6 +12,9 @@ module Ponyup
   module Components
     autoload :Security, 'ponyup/components/security'
     autoload :Host, 'ponyup/components/host'
+    autoload :Vpc, 'ponyup/components/vpc'
+    autoload :Subnet, 'ponyup/components/subnet'
+    autoload :Gateway, 'ponyup/components/gateway'
   end
 
   module Provisioners

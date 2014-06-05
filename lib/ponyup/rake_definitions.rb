@@ -17,8 +17,8 @@ module Ponyup
     #     security 'hybrid', 22, shadows: 8080
     #     security 'hybrid', [22, 80], shadows: 8080
     #
-    def security name, public_ports=[], group_ports={}
-      Ponyup::Components::Security.define name, public_ports, group_ports
+    def security name, public_ports=[], group_ports={}, options={}
+      Ponyup::Components::Security.define name, public_ports, group_ports, options
       Ponyup::Runner.add_component "security:#{name}"
     end
 
@@ -29,6 +29,27 @@ module Ponyup
     def host name, security_groups, runlist=nil, options={}
       Ponyup::Components::Host.define name, security_groups, runlist, options
       Ponyup::Runner.add_component "host:#{name}"
+    end
+
+    # Define a VPC.
+    #
+    def vpc name, cidr
+      Ponyup::Components::Vpc.define name, cidr
+      Ponyup::Runner.add_component "vpc:#{name}:provision"
+    end
+
+    # Create a subnet.
+    #
+    def subnet name, cidr, vpc_name=nil
+      Ponyup::Components::Subnet.define name, cidr, vpc_name
+      Ponyup::Runner.add_component "subnet:#{name}:provision"
+    end
+
+    # Define a VPC internet gateway.
+    #
+    def gateway name, vpc_name=nil
+      Ponyup::Components::Gateway.define name, vpc_name
+      Ponyup::Runner.add_component "gateway:#{name}:provision"
     end
 
     # Define a knife-solo process for configuring server.
