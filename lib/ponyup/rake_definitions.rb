@@ -35,21 +35,21 @@ module Ponyup
     #
     def vpc name, cidr
       Ponyup::Components::Vpc.define name, cidr
-      Ponyup::Runner.add_setup_task "vpc:#{name}:provision"
+      Ponyup::Runner.add_component "vpc:#{name}:provision"
     end
 
     # Create a subnet.
     #
     def subnet name, cidr, vpc_name=nil
       Ponyup::Components::Subnet.define name, cidr, vpc_name
-      Ponyup::Runner.add_setup_task "subnet:#{name}:provision"
+      Ponyup::Runner.add_component "subnet:#{name}:provision"
     end
 
     # Define a VPC internet gateway.
     #
     def gateway name, vpc_name=nil
       Ponyup::Components::Gateway.define name, vpc_name
-      Ponyup::Runner.add_setup_task "gateway:#{name}:provision"
+      Ponyup::Runner.add_component "gateway:#{name}:provision"
     end
 
     # Define a knife-solo process for configuring server.
